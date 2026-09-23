@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
-
+from typing import List
+from pydantic import BaseModel, Field
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage
@@ -23,13 +24,23 @@ load_dotenv()
 #     print(f"Searching for{query}")
 #     return tavily.search(query=query)
 
-llm= ChatGoogleGenerativeAI(model="gemini-3-flash-preview")
+class Source(BaseModel):
+    """Schema for a source used by the agent"""
+    url:str=Field(description="The URL of the source")
+    
+class AgentResponse(BaseModel):
+    """Schema for agent respone with answer and sources"""
+    answer:str=Field(description="The agent's answer to the query")
+    sources:List[Source]=Field(description="List of sources used to generate the answers")
+
+
+llm= ChatGoogleGenerativeAI(model="gemini-3.8-flash")
 tools=[TavilySearch()]
-agent= create_agent(model=llm, tools=tools)
+agent= create_agent(model=llm, tools=tools, response_format=AgentResponse)
 def main():
     print("Hello from langchain-course!")
     result= agent.invoke({"messages": HumanMessage(content="search for 3 job postings for an ai engineer using langchain in the bay area on linkedin and list their details?")})
-    print(result["messages"][-1].content)
+    print(result)
     
 if __name__=="__main__":
     main()
